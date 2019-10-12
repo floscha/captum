@@ -105,12 +105,32 @@ class AttributionVisualizer(object):
         )
 
     def render(self, blocking=False, debug=False):
-        from IPython.display import IFrame, display
+        import IPython
         from captum.insights.server import start_server
 
         port = start_server(self, blocking, debug)
 
-        display(IFrame(src=f"http://127.0.0.1:{port}", width="100%", height="500px"))
+        # TODO Make a parameter?
+        height = 500
+
+        shell = """
+        <div id="root"></div>
+        <script>
+          (function() {
+            function setHeight(root, height) {
+              root.style.height = `${height}px`;
+            }
+            const root = document.getElementById("root");
+            fetch(".")
+              .then((x) => x.text())
+              .then((html) => void (root.innerHTML = html))
+              .then(() => setHeight(root, %HEIGHT%));
+          })();
+        </script>
+        """.replace("%PORT%", "%d" % port).replace("%HEIGHT%", "%d" % height)
+
+        html = IPython.display.HTML(shell)
+        IPython.display.display(html)
 
     def _get_labels_from_scores(
         self, scores: Tensor, indices: Tensor
